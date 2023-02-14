@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
 
+
 class StaffBase(BaseModel):
     name: str
     email: EmailStr
@@ -9,32 +10,39 @@ class StaffBase(BaseModel):
     phone_number: str
 
 
+
+####################################
+
+
 class CreateStaff(StaffBase):
     pass
-    
+
 
 class CreateStaffOut(StaffBase):   
-    id: str
-    
+    id: int
     created_at: datetime
-    class Config():
-        orm_mode = True
 
+    class Config:
+        orm_mode = True
 
 
 class StaffOut(StaffBase):
     created_at: datetime
 
-    class Config():
+    class Config:
         orm_mode = True
-    
+
 
 class StaffAllOut(StaffBase):
-    id: str
+    id: int
     created_at: datetime
+    image_present_count: int
 
-    class Config():
+    class Config:
         orm_mode = True
+
+    
+#########################################
 
 
 class AdminCreate(BaseModel):
@@ -47,7 +55,7 @@ class AdminOut(BaseModel):
     email: EmailStr
     created_at: datetime
 
-    class Config():
+    class Config:
         orm_mode = True
 
 

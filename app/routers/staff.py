@@ -1,6 +1,9 @@
 from fastapi import APIRouter, status, Depends, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
 from typing import List
+from sqlalchemy import func
+
+
 
 from app import models, schemas, utils, oauth2
 from app.database import get_db 
@@ -17,10 +20,10 @@ router = APIRouter(
 async def create_staff(
     staff: schemas.CreateStaff, 
     db: Session = Depends(get_db),
-    current_admin: int = Depends(oauth2.get_current_admin)
+    current_admin: dict = Depends(oauth2.get_current_admin)
 ):
-
-    new_staff = models.Staff(**staff.dict())
+    
+    new_staff = models.Staff(**staff.dict(), admin_id=current_admin.id)
     db.add(new_staff)
     db.commit()
     db.refresh(new_staff)
@@ -35,14 +38,19 @@ async def create_staff(
 async def get_staff(
     id: int,
     db: Session = Depends(get_db), 
-    current_admin: int = Depends(oauth2.get_current_admin)
+    current_admin: dict = Depends(oauth2.get_current_admin)
 ):
-
-    staff = db.query(models.Staff).filter(models.Staff.id == id).first()
+    
+    staff = db.query(
+        models.Staff).filter(
+            models.Staff.id == id, 
+            models.Staff.admin_id == current_admin.id
+        ).first()
 
     if not staff: 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Staff with id: {id} not found"
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Staff with id: {id} not found"
         )
     
     return staff
@@ -52,11 +60,34 @@ async def get_staff(
 @router.get("/", response_model=List[schemas.StaffAllOut])
 async def get_all_staff(
     db: Session = Depends(get_db), 
-    current_admin: int = Depends(oauth2.get_current_admin)
+    current_admin: dict = Depends(oauth2.get_current_admin)
 ):
 
-    staffs = db.query(models.Staff).all()
+    
+    all_staff = db.query(
+        models.Staff, 
+        func.count(models.Image.staff_id).label("image_present_count")
+        ).join(
+            models.Image, 
+            models.Image.staff_id == models.Staff.id, 
+            isouter=True
+            ).group_by(models.Staff.id
+            ).filter(models.Staff.admin_id == current_admin.id
+        ).all()
 
+    staffs = []
+    for staff, image_count in all_staff:
+        staffs.append({
+            "id": staff.id,
+            "name": staff.name,
+            "email": staff.email,
+            "gender": staff.gender,
+            "phone_number": staff.phone_number,
+            "created_at": staff.created_at,
+            "admin_id": staff.admin_id,
+            "image_present_count": image_count
+        })
+    
     return staffs
 
 
@@ -65,14 +96,19 @@ async def get_all_staff(
 async def delete_staff(
     id: int,  
     db: Session = Depends(get_db),
-    current_admin: int = Depends(oauth2.get_current_admin)
+    current_admin: dict = Depends(oauth2.get_current_admin)
 ):
 
-    staff = db.query(models.Staff).filter(models.Staff.id == id)
+    staff = db.query(
+        models.Staff).filter(
+            models.Staff.id == id, 
+            models.Staff.admin_id == current_admin.id
+        )
 
     if staff.first() == None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"post with id: {id} does not exist"
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Staff with id: {id} does not exist"
         )
     
     staff.delete(synchronize_session=False)
@@ -87,15 +123,21 @@ async def update_staff(
     id: int, 
     updated_staff: schemas.CreateStaff, 
     db: Session = Depends(get_db),
-    current_admin: int = Depends(oauth2.get_current_admin)
+    current_admin: dict = Depends(oauth2.get_current_admin)
 ):
 
-    staff_query = db.query(models.Staff).filter(models.Staff.id == id)
+    staff_query = db.query(
+        models.Staff).filter(
+            models.Staff.id == id, 
+            models.Staff.admin_id == current_admin.id
+        )
+
     staff = staff_query.first()
 
     if staff == None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"post with id: {id} does not exist"
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Staff with id: {id} does not exist"
         )
 
     staff_query.update(updated_staff.dict(), synchronize_session=False)
@@ -105,12 +147,12 @@ async def update_staff(
 
 
 
-@router.post("/image/{id}")
+@router.post("/images/{id}")
 async def upload_staff_image(
     id: int,
     file: UploadFile, 
     db: Session = Depends(get_db),
-    current_admin: int = Depends(oauth2.get_current_admin)
+    current_admin: dict = Depends(oauth2.get_current_admin)
 ):
 
     image_data = await file.read()
@@ -118,38 +160,65 @@ async def upload_staff_image(
     if utils.not_image(image_data):
         return {"massage": "invalid image format"}
 
-    staff = db.query(models.Staff).filter(models.Staff.id == id).first()
+    staff = db.query( 
+        models.Staff).filter(
+            models.Staff.id == id,  
+            models.Staff.admin_id == current_admin.id
+        ).first()
 
     if not staff: 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Staff with id: {id} not found"
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Staff with id: {id} not found"
         )
 
+    try:
+        image = models.Image(
+            file_data=image_data, 
+            filename=file.filename, 
+            staff_id=id, 
+        )
 
-    image = models.Image(file_data=image_data, filename=file.filename, staff_id=id)
-    db.add(image)
-    db.commit()
+        db.add(image)
+        db.commit()
 
-    return {"filename": file.filename, "message": "Upload  Successful"}
+        return {"filename": file.filename, "message": "Upload  Successful"}
+
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Staff with id: {id} already has a image"
+        )
+        
+
+    
 
 
 
-@router.put("/image/{id}")
+@router.put("/images/{id}")
 async def update_staff_image(
     id: int, 
     file: UploadFile, 
     db: Session = Depends(get_db),
-    current_admin: int = Depends(oauth2.get_current_admin)
+    current_admin: dict = Depends(oauth2.get_current_admin)
 ):
 
     image_data = await file.read()
     if utils.not_image(image_data):
         return {"massage": "invalid image format"}
-    
-    staff_image = db.query(models.Image).filter(models.Image.image_id == id).first()
+
+
+    staff_image = db.query(
+        models.Image).join(
+            models.Staff, models.Staff.id == models.Image.staff_id).filter(
+                models.Image.staff_id == id, 
+                models.Staff.admin_id == current_admin.id
+    ).first()
+
     if not staff_image: 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Staff with id: {id} not found"
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Staff with id: {id} has no image"
         )
 
     try:
@@ -158,11 +227,16 @@ async def update_staff_image(
 
     except Exception:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update profile image")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Failed to update profile image"
+        )
 
     finally:
         db.close()
 
     return {"filename": file.filename, "message": "Update  Successful"}
     
-    
+
+
+  

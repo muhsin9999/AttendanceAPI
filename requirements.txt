@@ -7,3 +7,5 @@ python-multipart
 PILLOW
 passlib[bcrypt]
 python-jose[crytography]
+opencv-python
+alembic
