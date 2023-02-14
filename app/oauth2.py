@@ -30,7 +30,6 @@ def create_access_token(data: dict):
 def verify_access_token(token: str, credentials_exception):
    
     try:
-
         pay_load = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
         id: str = pay_load.get("admin_id")
