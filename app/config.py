@@ -16,4 +16,5 @@ class Settings(BaseSettings):
         env_file = "venv\.env"
     
 
+    
 settings = Settings()
