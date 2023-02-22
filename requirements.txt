@@ -8,4 +8,5 @@ PILLOW
 passlib[bcrypt]
 python-jose[crytography]
 opencv-python
-alembic
+face_recognition
+dlib

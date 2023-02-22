@@ -10,7 +10,6 @@ class StaffBase(BaseModel):
     phone_number: str
 
 
-
 ####################################
 
 
@@ -36,7 +35,7 @@ class StaffOut(StaffBase):
 class StaffAllOut(StaffBase):
     id: int
     created_at: datetime
-    image_present_count: int
+    image_present: int
 
     class Config:
         orm_mode = True

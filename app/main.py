@@ -8,12 +8,14 @@ from .database import engine
 
 models.Base.metadata.create_all(bind=engine)
 
+
 app = FastAPI(title="Attendance API")
 
 
 app.include_router(admin.router)
 app.include_router(staff.router)
 app.include_router(authentication.router)
+
 
 
     

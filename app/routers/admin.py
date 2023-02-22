@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends, HTTPException, Response, UploadFile
+from fastapi import APIRouter, status, Depends
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -29,12 +29,14 @@ async def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)
     return new_admin
 
 
+
 @router.get("/all", response_model=List[schemas.AdminOut])
 async def get_all_admin(db: Session = Depends(get_db)):
 
     admin = db.query(models.Admin).all()
-    
+
     return admin
+    
 
 
 
