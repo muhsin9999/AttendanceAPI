@@ -5,9 +5,9 @@ Lib/
 Include/
 .env
 app/routers/__pycache__/
-face_rec/__pycache__/
-repository/__pycache__/
-face_rec/run_attendance
+app/face_rec/__pycache__/
+app/routers/repository/__pycache__/
+app/face_rec/run_attendance.py
 app/routers/faceencoding.py
 app/routers/attendance.py
 
