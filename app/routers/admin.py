@@ -30,15 +30,6 @@ async def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)
 
 
 
-@router.get("/all", response_model=List[schemas.AdminOut])
-async def get_all_admin(db: Session = Depends(get_db)):
-
-    admin = db.query(models.Admin).all()
-
-    return admin
-    
-
-
 
 @router.get("/", response_model=schemas.AdminOut)
 async def get_admin(

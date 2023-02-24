@@ -12,6 +12,7 @@ from app.face_rec import processimage
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def hash(password: str):
     return pwd_context.hash(password)
 
@@ -53,13 +54,6 @@ async def process_image_files(files):
 
 
 
-def group_table_data_by_day(result):
-    sorted_result = sorted(result, key=lambda x: x.datetime.date())
-    grouped_result = []
-    for k, g in groupby(sorted_result, key=lambda x: x.datetime.date()):
-        rows = list(g)
-        grouped_result.append((k, rows))
-    return grouped_result
 
 
 

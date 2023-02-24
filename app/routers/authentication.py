@@ -29,6 +29,7 @@ async def login(
             detail=f'Invalid Credentials'
         )
 
+        
     access_token = oauth2.create_access_token(data={"admin_id": admin.id})
 
     return {"access_token" : access_token, "token_type": "bearer"}
