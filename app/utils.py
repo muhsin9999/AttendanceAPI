@@ -2,8 +2,6 @@ from passlib.context import CryptContext
 from fastapi import Response
 
 
-from itertools import groupby
-from datetime import date
 import csv
 import io
 
