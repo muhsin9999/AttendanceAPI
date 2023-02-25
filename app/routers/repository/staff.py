@@ -1,8 +1,8 @@
 from fastapi import status, HTTPException, Response
 from sqlalchemy import func
 
-from app import models, utils
-from app.face_rec import encodings
+from app import models
+from app.face_rec import encodings, processimage
 
 
 
@@ -135,7 +135,7 @@ async def upload(id, files, db, current_admin):
             detail=f"No item uploaded"
         )
 
-    face_encodings = await utils.process_image_files(files)
+    face_encodings = await processimage.process_image_files(files)
 
     staff_encoding = models.FaceEncoding(  
         staff_id=id,
@@ -236,7 +236,7 @@ async def update_st_image(id, files, db, current_admin):
             detail=f"No item uploaded"
         )
 
-    face_encodings = await utils.process_image_files(files)
+    face_encodings = await processimage.process_image_files(files)
 
     row = db.query(models.FaceEncoding).filter(models.FaceEncoding.staff_id == id).first()
     

@@ -3,6 +3,7 @@ from PIL import Image
 import tempfile 
 import cv2
 import io
+import numpy as np
 
 
 def find_encodings(image_data):
@@ -28,3 +29,19 @@ def not_image(image_data):
     except Exception:
         return True
     return False
+
+
+
+async def process_image_files(files):
+    face_encodings = []
+    for file in files:
+        contents = await file.read()
+        if not_image(contents):
+            return {"massage": "invalid image format"}
+
+        face_encoding = find_encodings(contents)
+        face_encodings.append(face_encoding)
+
+    face_encodings = np.mean(face_encodings, axis=0)
+
+    return face_encodings

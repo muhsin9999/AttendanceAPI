@@ -1,6 +1,7 @@
 import face_recognition
 import tempfile 
 import cv2
+import numpy as np
 
 
 
@@ -53,7 +54,7 @@ def cam_capture():
 
             face_encoding = capture_encoding(resized_img)
 
-            face_encodings.append(face_encoding.tolist())
+            face_encodings.append(face_encoding)
             cv2.putText(frame, "Capture Taken", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2) 
             print(num_captures)
             num_captures += 1
@@ -72,11 +73,8 @@ def cam_capture():
 
 
     if len(face_encodings) == 5:
+        face_encodings = np.mean(face_encodings, axis=0)
         return face_encodings  
-
-
-
-
 
 
 

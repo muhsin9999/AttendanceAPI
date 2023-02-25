@@ -1,11 +1,8 @@
 from passlib.context import CryptContext
 from fastapi import Response
 
-
 import csv
 import io
-
-from app.face_rec import processimage
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -15,12 +12,24 @@ def hash(password: str):
     return pwd_context.hash(password)
 
 
-
 def verify(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 
 
+def get_column_row(state, db, table, columns_to_exclude):
+    if state == "all":
+        column_names = [column.name for column in table.__table__.columns]
+        rows = db.query(*[getattr(table, column_name) for column_name in column_names]).all()
+
+    elif state == "exclude":
+        columns_to_exclude = ['password', 'created_at']
+        column_names = [column.name for column in table.__table__.columns if column.name not in columns_to_exclude]
+        rows = db.query(*[getattr(table, column_name) for column_name in column_names]).all()
+
+    return column_names, rows
+        
+        
 
 def download_file_csv(download_name, column_names, rows):
      # Write data to CSV file
@@ -36,18 +45,6 @@ def download_file_csv(download_name, column_names, rows):
     response.headers["Content-Disposition"] = f"attachment; filename={download_name}.csv"
     return response
 
-
-async def process_image_files(files):
-    face_encodings = []
-    for file in files:
-        contents = await file.read()
-        if processimage.not_image(contents):
-            return {"massage": "invalid image format"}
-
-        face_encoding = processimage.find_encodings(contents)
-        face_encodings.append(face_encoding.tolist())
-
-    return face_encodings
 
 
 
