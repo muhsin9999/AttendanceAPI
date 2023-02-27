@@ -177,7 +177,7 @@ async def capture(id, db, current_admin):
     face_encodings = encodings.cam_capture()
 
 
-    if not face_encodings:
+    if face_encodings is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail=f"Could not get captures")
 
     staff_encoding = models.FaceEncoding(  

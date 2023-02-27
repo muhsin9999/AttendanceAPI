@@ -6,13 +6,20 @@ import numpy as np
 
 
 def detect_faces(frame):
+    found_face = False
     face_locations = face_recognition.face_locations(frame)
+    
 
     for (top, right, bottom, left) in face_locations:
-        cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+        cv2.rectangle(frame, (left, top), (right, bottom), (255, 255, 255), 1)
     
     cv2.putText(frame, "Press 'c' to take a capture", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-   
+    
+    if face_locations != []:
+        found_face = True
+
+    print(face_locations)
+    return found_face
 
 def capture_encoding(frame):
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
@@ -21,7 +28,7 @@ def capture_encoding(frame):
 
     img = cv2.imread(tmp.name)
     face_encoding = face_recognition.face_encodings(img)[0]
-    cv2.putText(frame, "Capture Taken", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    cv2.putText(frame, "Capture Taken", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
     
     return face_encoding
 
@@ -40,7 +47,7 @@ def cam_capture():
             print('Failed to grab frame')
             break
 
-        detect_faces(frame)
+        found_face = detect_faces(frame)
 
         if num_captures > 4:
             break
@@ -49,15 +56,16 @@ def cam_capture():
 
 
         if key == ord('c'): 
-            resized_img = cv2.resize(frame, (0,0), None, 0.25, 0.25)
-            resized_img = cv2.cvtColor(resized_img, cv2.COLOR_BGR2RGB)
+            resized_frame = cv2.resize(frame, (0,0), None, 0.25, 0.25)
+            resized_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
 
-            face_encoding = capture_encoding(resized_img)
+            if found_face:
+                face_encoding = capture_encoding(resized_frame)
 
-            face_encodings.append(face_encoding)
-            cv2.putText(frame, "Capture Taken", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2) 
-            print(num_captures)
-            num_captures += 1
+                face_encodings.append(face_encoding)
+                cv2.putText(frame, "Capture Taken", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2) 
+                print(num_captures)
+                num_captures += 1
 
 
         elif key == ord('q'):
@@ -75,7 +83,8 @@ def cam_capture():
     if len(face_encodings) == 5:
         face_encodings = np.mean(face_encodings, axis=0)
         return face_encodings  
-
+    else:
+        return None
 
 
 
