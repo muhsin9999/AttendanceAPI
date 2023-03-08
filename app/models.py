@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, ARRAY, DateTime
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, ARRAY, Date, Time
 from sqlalchemy.sql.sqltypes import TIMESTAMP
 from sqlalchemy.sql.expression import text
 from sqlalchemy.orm import relationship
@@ -44,3 +44,13 @@ class Admin(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
 
+
+class Attendance(Base):
+    __tablename__ = "Attendances"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    event = Column(String, nullable=False)
+    staff_id = Column(Integer, ForeignKey('Staffs.id'), nullable=False)
+    event_date = Column(Date)
+    event_time = Column(Time)
+    # created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))

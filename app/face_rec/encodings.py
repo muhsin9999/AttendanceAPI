@@ -13,7 +13,6 @@ def detect_faces(frame):
     for (top, right, bottom, left) in face_locations:
         cv2.rectangle(frame, (left, top), (right, bottom), (255, 255, 255), 1)
     
-    cv2.putText(frame, "Press 'c' to take a capture", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
     
     if face_locations != []:
         found_face = True
@@ -73,6 +72,7 @@ def cam_capture():
             break
         
         # Show the current frame
+        cv2.putText(frame, "Press 'c' to take a capture", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         cv2.imshow("Capturing", frame)
         
 
