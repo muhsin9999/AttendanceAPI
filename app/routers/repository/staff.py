@@ -5,21 +5,22 @@ from app import models
 from app.face_rec import encodings, processimage
 
 
-
 def create(staff, db ,current_admin):
-    new_staff = models.Staff(**staff.dict(), admin_id=current_admin.id)
-    db.add(new_staff)
-    db.commit()
-    db.refresh(new_staff)
+    try:
+        new_staff = models.Staff(**staff.dict(), admin_id=current_admin.id)
+        db.add(new_staff)
+        db.commit()
+        db.refresh(new_staff)
 
-    db.close()
-    
+        db.close()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Staff with id: {id} already exists"
+        )
     return new_staff
 
-
-
 def show_all(db, current_admin):
-
     all_staff = db.query(
         models.Staff,
         func.count(models.FaceEncoding.staff_id).label("image_present")
@@ -33,7 +34,6 @@ def show_all(db, current_admin):
                 models.Staff.admin_id == current_admin.id
     ).all()
 
-
     staffs = [{
             "id": staff.id,
             "name": staff.name,
@@ -44,14 +44,9 @@ def show_all(db, current_admin):
             "admin_id": staff.admin_id,
             "image_present": image_count
     } for staff, image_count in all_staff]
-
     return staffs
 
-
-
-
 def show(id, db, current_admin):
-
     staff = db.query(
         models.Staff).filter(
             models.Staff.id == id, 
@@ -63,14 +58,9 @@ def show(id, db, current_admin):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Staff with id: {id} not found"
         )
-    
     return staff
 
-
-
-
 def remove(id, db, current_admin):
-
     staff = db.query(
         models.Staff).filter(
             models.Staff.id == id, 
@@ -85,14 +75,9 @@ def remove(id, db, current_admin):
     
     staff.delete(synchronize_session=False)
     db.commit()
-
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-
-
-
 def update_st(id, updated_staff, db, current_admin):
-
     staff_query = db.query(
         models.Staff).filter(
             models.Staff.id == id, 
@@ -109,14 +94,9 @@ def update_st(id, updated_staff, db, current_admin):
 
     staff_query.update(updated_staff.dict(), synchronize_session=False)
     db.commit()
-
     return staff_query.first()
 
-
-
-
 async def upload(id, files, db, current_admin):
-
     staff = db.query( 
         models.Staff).filter(
             models.Staff.id == id,  
@@ -136,13 +116,10 @@ async def upload(id, files, db, current_admin):
         )
 
     face_encodings = await processimage.process_image_files(files)
-
     staff_encoding = models.FaceEncoding(  
         staff_id=id,
         face_encoding=face_encodings
     )
-
-    
     
     try:
         db.add(staff_encoding)
@@ -150,18 +127,13 @@ async def upload(id, files, db, current_admin):
         db.refresh(staff_encoding)
 
         db.close()
-
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Staff with id: {id} already has an image"
         )
 
-
-
-
 async def capture(id, db, current_admin):
-
     staff = db.query( 
         models.Staff).filter(
             models.Staff.id == id,  
@@ -175,8 +147,6 @@ async def capture(id, db, current_admin):
         )
        
     face_encodings = encodings.cam_capture()
-
-
     if face_encodings is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail=f"Could not get captures")
 
@@ -190,21 +160,14 @@ async def capture(id, db, current_admin):
         db.commit()
         db.refresh(staff_encoding)
 
-        db.close()
-        
+        db.close() 
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Staff with id: {id} already has an image"
         )
 
-    
-
-
-
-
 async def update_st_image(id, files, db, current_admin):
-
     staff = db.query( 
         models.Staff).filter(
             models.Staff.id == id,  
@@ -240,18 +203,15 @@ async def update_st_image(id, files, db, current_admin):
 
     row = db.query(models.FaceEncoding).filter(models.FaceEncoding.staff_id == id).first()
     
-    
     try:
         row.face_encoding=face_encodings
         db.commit()
-
     except Exception:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail="Failed to update profile image"
         )
-
     finally:
         db.close()
 

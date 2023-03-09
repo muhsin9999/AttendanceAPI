@@ -7,7 +7,5 @@ Include/
 app/routers/__pycache__/
 app/face_rec/__pycache__/
 app/routers/repository/__pycache__/
-app/face_rec/run_attendance.py
-app/routers/faceencoding.py
 app/routers/attendance123.py
 

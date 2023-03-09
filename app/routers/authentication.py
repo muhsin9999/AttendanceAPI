@@ -7,13 +7,11 @@ from app import database, schemas, models, utils, oauth2
 
 router = APIRouter(tags=['Authentication'])
 
-
 @router.post('/login', response_model=schemas.Token)
 async def login(
     admin_credentials: OAuth2PasswordRequestForm = Depends(), 
     db: Session = Depends(database.get_db)
 ):
-
     admin = db.query(models.Admin).filter(
         models.Admin.email == admin_credentials.username).first()
 
@@ -29,7 +27,5 @@ async def login(
             detail=f'Invalid Credentials'
         )
 
-        
     access_token = oauth2.create_access_token(data={"admin_id": admin.id})
-
     return {"access_token" : access_token, "token_type": "bearer"}

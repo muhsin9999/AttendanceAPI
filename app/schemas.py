@@ -2,15 +2,11 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
 
-
 class StaffBase(BaseModel):
     name: str
     email: EmailStr
     gender: str
     phone_number: str
-
-
-####################################
 
 
 class CreateStaff(StaffBase):
@@ -39,9 +35,6 @@ class StaffAllOut(StaffBase):
 
     class Config:
         orm_mode = True
-
-    
-#########################################
 
 
 class AdminCreate(BaseModel):

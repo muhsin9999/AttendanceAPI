@@ -1,23 +1,19 @@
-import face_recognition
-import tempfile 
 import cv2
+import face_recognition
 import numpy as np
-
+import tempfile
 
 
 def detect_faces(frame):
     found_face = False
     face_locations = face_recognition.face_locations(frame)
-    
 
     for (top, right, bottom, left) in face_locations:
         cv2.rectangle(frame, (left, top), (right, bottom), (255, 255, 255), 1)
     
-    
     if face_locations != []:
         found_face = True
 
-    print(face_locations)
     return found_face
 
 def capture_encoding(frame):
@@ -39,7 +35,6 @@ def cam_capture():
     num_captures = 0
 
     while True:
-
         success, frame = webcam.read()
 
         if not success:
@@ -53,7 +48,6 @@ def cam_capture():
 
         key = cv2.waitKey(1)
 
-
         if key == ord('c'): 
             resized_frame = cv2.resize(frame, (0,0), None, 0.25, 0.25)
             resized_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
@@ -66,25 +60,26 @@ def cam_capture():
                 print(num_captures)
                 num_captures += 1
 
-
         elif key == ord('q'):
             print("Turning off camera.")
             break
         
-        # Show the current frame
         cv2.putText(frame, "Press 'c' to take a capture", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         cv2.imshow("Capturing", frame)
         
-
     webcam.release()
     cv2.destroyAllWindows()
-
 
     if len(face_encodings) == 5:
         face_encodings = np.mean(face_encodings, axis=0)
         return face_encodings  
     else:
         return None
+    
+
+
+
+    
 
 
 
