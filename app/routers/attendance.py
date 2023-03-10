@@ -29,20 +29,22 @@ async def fetch_all_attendance(
     db: Session = Depends(get_db),
     current_admin: dict = Depends(oauth2.get_current_admin)
 ):  
-    existing_record_querry = db.query(models.Attendance).filter(
+    existing_record_query = db.query(models.Attendance).filter(
         models.Attendance.admin_id == current_admin.id,
         models.Attendance.event == event
     )
-    existing_record = existing_record_querry.first()
+    existing_record = existing_record_query.first()
     if not existing_record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No Record found"
         )
-    record = existing_record_querry.all()
-    dates = [date.event_date for date in record]
+    existing_records = existing_record_query 
+    event_dates = [record.event_date for record in existing_records]
+    unique_dates = list(set(event_dates))
+    
     record = attendance.AttendanceTaker(db, event, current_admin)
-    response = record.response(dates)
+    response = record.response(unique_dates)
     return response
 
 @router.get("/{event}/{event_date}")

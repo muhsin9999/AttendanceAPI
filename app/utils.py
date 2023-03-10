@@ -21,6 +21,7 @@ def fetch_table_data(table, db, event_date, event, current_admin, columns_to_exc
         table.event_date == event_date,
         table.event == event
     ).all()
+    print(rows)
     column_names = [column.name for column in table.__table__.columns if column in selected_columns]
     return column_names, rows
         
@@ -34,7 +35,7 @@ def write_file_csv(column_names, rows):
     output.seek(0)
 
     return output
-    
+
 
 
 

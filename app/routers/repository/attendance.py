@@ -1,13 +1,12 @@
-from fastapi import status, HTTPException, Response
-from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from typing import List
 import cv2
 import face_recognition
 from datetime import datetime, date
-
 import io
 import zipfile
-
+from sqlalchemy.orm import Session
+from fastapi import status, HTTPException, Response
+from fastapi.responses import StreamingResponse
 
 from app import models, utils
 
@@ -24,6 +23,35 @@ class AttendanceTaker:
         self.staff_names = []
         self.staff_known_encodings = []
 
+    def response(self, dates: List[datetime] = None):
+        columns_to_exclude = ['id', 'event', 'created_at', 'admin_id']
+        if dates is None:
+            column_names, rows = utils.fetch_table_data(
+                table=models.Attendance, columns_to_exclude=columns_to_exclude, 
+                db=self.db, event_date=self.event_date, current_admin=self.current_admin.id, event=self.event
+            )
+            download_name = f"{self.event} Attendance({self.event_date})"
+            return self.download_csv(column_names, rows, download_name)
+        else:
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, "w") as zip_archive:
+                for date in dates:
+                    column_names, rows = utils.fetch_table_data(
+                        table=models.Attendance, columns_to_exclude=columns_to_exclude, 
+                        db=self.db, event_date=date, current_admin=self.current_admin.id, event=self.event
+                    )
+
+                    file_name = f"{self.event} Attendance({date})"
+                    file_buffer = io.BytesIO()
+                    file_contents = utils.write_file_csv(column_names, rows).getvalue().encode()
+                    file_buffer.write(file_contents)
+                    file_buffer.seek(0)
+
+                    zip_archive.writestr(f"{file_name}.csv", file_buffer.getvalue())
+            
+            buffer.seek(0)
+            return self.download_zip(buffer)
+
     def download_csv(self, column_names, rows, file_name):
         output = utils.write_file_csv(column_names, rows)
         response = Response(content=output.getvalue(), media_type="text/csv")
@@ -34,33 +62,7 @@ class AttendanceTaker:
         response = StreamingResponse(buffer, media_type="application/octet-stream")
         response.headers["Content-Disposition"] = f"attachment; filename={self.event}.zip"
         response.headers["Content-Type"] = "application/octet-stream"
-        
         return response
-
-    def response(self, dates: list = None):
-        columns_to_exclude = ['id', 'event', 'created_at', 'admin_id']
-
-        if dates is None:
-            column_names, rows = utils.fetch_table_data(
-                table=models.Attendance, columns_to_exclude=columns_to_exclude, 
-                db=self.db, event_date=self.event_date, current_admin=self.current_admin.id, event=self.event
-            )
-            download_name = f"{self.event} attendance({self.event_date})"
-            return self.download_csv(column_names, rows, download_name)
-
-        else:
-            buffer = io.BytesIO()
-            with zipfile.ZipFile(buffer, "w") as zip_archive:
-                for date in dates:
-                    column_names, rows = utils.fetch_table_data(
-                        table=models.Attendance, columns_to_exclude=columns_to_exclude, 
-                        db=self.db, event_date=date, current_admin=self.current_admin.id, event=self.event
-                    )
-                    file_name = f"{self.event} attendance({date})"
-                    file_contents = utils.write_file_csv(column_names, rows).getvalue()
-                zip_archive.writestr(f"{file_name}.csv", file_contents)
-            buffer.seek(0)
-            return self.download_zip(buffer)
         
     def mark_attendance(self, staff_id: int):
         if self.event_date != self.today_date:
@@ -164,8 +166,8 @@ class AttendanceTaker:
             models.Attendance.event == self.event,
             models.Attendance.event_date == self.event_date, 
             models.Attendance.admin_id == self.current_admin.id
-        ).first()
-        if not record:
+        )
+        if not record.first():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Attendance with date: {date} or Event Name {self.event} does not exist"
