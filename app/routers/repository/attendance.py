@@ -43,7 +43,7 @@ class AttendanceTaker:
 
                     file_name = f"{self.event} Attendance({date})"
                     file_buffer = io.BytesIO()
-                    file_contents = utils.write_file_csv(column_names, rows).getvalue().encode()
+                    file_contents = utils.generate_csv_output(column_names, rows).getvalue().encode()
                     file_buffer.write(file_contents)
                     file_buffer.seek(0)
 
@@ -53,7 +53,7 @@ class AttendanceTaker:
             return self.download_zip(buffer)
 
     def download_csv(self, column_names, rows, file_name):
-        output = utils.write_file_csv(column_names, rows)
+        output = utils.generate_csv_output(column_names, rows)
         response = Response(content=output.getvalue(), media_type="text/csv")
         response.headers["Content-Disposition"] = f"attachment; filename={file_name}.csv"
         return response
@@ -88,7 +88,7 @@ class AttendanceTaker:
             self.db.refresh(attendee)
             is_marked_attendance = True
         else:
-            print("Attendance already recorded for this employee today.")
+            print("Attendance already recorded today.")
         return is_marked_attendance
 
     def draw_face_box_with_text(self, face_location, text, frame, text_colour, box_colour):

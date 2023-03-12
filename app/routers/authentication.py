@@ -21,7 +21,7 @@ async def login(
             detail=f'Invalid Credentials'
         )
     
-    if not utils.verify(admin_credentials.password, admin.password):
+    if not utils.verify_password(admin_credentials.password, admin.password):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f'Invalid Credentials'

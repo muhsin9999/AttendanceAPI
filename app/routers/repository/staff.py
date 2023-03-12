@@ -146,7 +146,7 @@ async def capture(id, db, current_admin):
             detail=f"Staff with id: {id} not found"
         )
        
-    face_encodings = encodings.cam_capture()
+    face_encodings = encodings.capture_multiple_face_encodings()
     if face_encodings is None:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail=f"Could not get captures")
 

@@ -31,7 +31,7 @@ async def fetch_all_attendance(
 ):  
     existing_record_query = db.query(models.Attendance).filter(
         models.Attendance.admin_id == current_admin.id,
-        models.Attendance.event == event
+        models.Attendance.event == event.capitalize()
     )
     existing_record = existing_record_query.first()
     if not existing_record:
@@ -57,7 +57,7 @@ async def fetch_attendance(
     existing_record = db.query(models.Attendance).filter(
         models.Attendance.admin_id == current_admin.id,
         models.Attendance.event_date == event_date,
-        models.Attendance.event == event
+        models.Attendance.event == event.capitalize()
     ).first()
     if not existing_record:
         raise HTTPException(

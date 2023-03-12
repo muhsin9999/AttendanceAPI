@@ -13,7 +13,7 @@ router = APIRouter(
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.AdminOut)
 async def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)):
-    hashed_password = utils.hash(admin.password)
+    hashed_password = utils.hash_password(admin.password)
     admin.password = hashed_password
 
     try:

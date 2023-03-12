@@ -4,19 +4,15 @@ import numpy as np
 import tempfile
 
 
-def detect_faces(frame):
-    found_face = False
+def detect_and_draw_faces(frame):
     face_locations = face_recognition.face_locations(frame)
 
     for (top, right, bottom, left) in face_locations:
         cv2.rectangle(frame, (left, top), (right, bottom), (255, 255, 255), 1)
-    
-    if face_locations != []:
-        found_face = True
 
-    return found_face
+    return len(face_locations) > 0
 
-def capture_encoding(frame):
+def capture_face_encoding(frame):
     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
         cv2.imwrite(tmp.name, frame)
         tmp.flush()
@@ -28,11 +24,10 @@ def capture_encoding(frame):
     return face_encoding
 
 
-def cam_capture():
+def capture_multiple_face_encodings(num_captures=5):
     face_encodings = []
     webcam = cv2.VideoCapture(0)
-
-    num_captures = 0
+    captures_remaining = num_captures
 
     while True:
         success, frame = webcam.read()
@@ -41,26 +36,25 @@ def cam_capture():
             print('Failed to grab frame')
             break
 
-        found_face = detect_faces(frame)
+        found_face = detect_and_draw_faces(frame)
 
-        if num_captures > 4:
+        if captures_remaining == 0:
             break
 
-        key = cv2.waitKey(1)
+        key_press = cv2.waitKey(1)
 
-        if key == ord('c'): 
+        if key_press == ord('c'): 
             resized_frame = cv2.resize(frame, (0,0), None, 0.25, 0.25)
             resized_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
 
             if found_face:
-                face_encoding = capture_encoding(resized_frame)
+                face_encoding = capture_face_encoding(resized_frame)
 
                 face_encodings.append(face_encoding)
                 cv2.putText(frame, "Capture Taken", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2) 
-                print(num_captures)
-                num_captures += 1
+                captures_remaining -= 1
 
-        elif key == ord('q'):
+        elif key_press == ord('q'):
             print("Turning off camera.")
             break
         
@@ -70,9 +64,9 @@ def cam_capture():
     webcam.release()
     cv2.destroyAllWindows()
 
-    if len(face_encodings) == 5:
-        face_encodings = np.mean(face_encodings, axis=0)
-        return face_encodings  
+    if len(face_encodings) == num_captures:
+        mean_face_encodings = np.mean(face_encodings, axis=0)
+        return mean_face_encodings  
     else:
         return None
     
