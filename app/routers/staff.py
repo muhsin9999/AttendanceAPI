@@ -1,6 +1,6 @@
-from fastapi import APIRouter, status, Depends, UploadFile, File
+from fastapi import APIRouter, status, Depends, UploadFile, File, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 
 from app import schemas, oauth2, database 
@@ -53,24 +53,21 @@ async def update_staff(
 ):
     return staff.update_st(id, updated_staff, db, current_admin)
 
+ 
 @router.post("/images/{id}")
-async def upload_staff_image(
+async def get_staff_image(
     id: int,
-    files: List[UploadFile] = File(..., min_items=5, max_items=10),
+    action: schemas.StaffImageAction = Query(..., description="Action to perform", example="upload"),
+    files: Optional[List[UploadFile]] = File(..., min_items=5, max_items=10),
     db: Session = Depends(get_db),
     current_admin: dict = Depends(oauth2.get_current_admin)
 ):
-    await staff.upload(id, files, db, current_admin)
-    return {"message": "Upload  Successful"}
-
-@router.post("/capture_images/{id}")
-async def capture_staff_image(
-    id: int,
-    db: Session = Depends(get_db),
-    current_admin: dict = Depends(oauth2.get_current_admin)
-):
-    await staff.capture(id, db, current_admin)
-    return{"message": "Successful"}
+    if action == schemas.StaffImageAction.upload:
+        await staff.upload(id, files, db, current_admin)
+        return {"message": "Upload Successful"}
+    elif action == schemas.StaffImageAction.capture:
+        await staff.capture(id, db, current_admin)
+        return {"message": "Capture Successful"}
 
 @router.put("/images/{id}")
 async def update_staff_image(

@@ -33,8 +33,8 @@ async def process_image_files(files):
     for file in files:
         contents = await file.read()
         if is_not_image(contents):
-            return {"massage": "invalid image format"}
-
+            return None
+ 
         face_encoding = find_encodings(contents)
         face_encodings.append(face_encoding)
 

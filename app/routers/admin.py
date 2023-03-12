@@ -25,7 +25,7 @@ async def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Staff with id: {id} already has an image"
+            detail=f"Admin with email: {admin.email} already has an image"
         )
     return new_admin
 

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-
+from enum import Enum
 
 class StaffBase(BaseModel):
     name: str
@@ -35,6 +35,11 @@ class StaffAllOut(StaffBase):
 
     class Config:
         orm_mode = True
+
+
+class StaffImageAction(str, Enum):
+    upload = "upload"
+    capture = "capture"
 
 
 class AdminCreate(BaseModel):

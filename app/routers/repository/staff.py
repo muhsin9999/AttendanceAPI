@@ -16,7 +16,7 @@ def create(staff, db ,current_admin):
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Staff with id: {id} already exists"
+            detail=f"Staff with email: {staff.email} already exists"
         )
     return new_staff
 
@@ -108,7 +108,6 @@ async def upload(id, files, db, current_admin):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Staff with id: {id} not found"
         )
-
     if files is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -120,6 +119,12 @@ async def upload(id, files, db, current_admin):
         staff_id=id,
         face_encoding=face_encodings
     )
+    
+    if face_encodings is None:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"invalid image"
+        )
     
     try:
         db.add(staff_encoding)
