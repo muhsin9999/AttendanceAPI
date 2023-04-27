@@ -7,9 +7,10 @@ from app.database import get_db
 
 
 router = APIRouter(
-    prefix="/admins", 
+    prefix="/admins",
     tags=['Admin']
 )
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.AdminOut)
 async def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)):
@@ -25,14 +26,16 @@ async def create_admin(admin: schemas.AdminCreate, db: Session = Depends(get_db)
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Admin with email: {admin.email} already has an image"
+            detail=f"Admin with email: {admin.email} already exists"
         )
     return new_admin
 
+
 @router.get("/", response_model=schemas.AdminOut)
 async def get_admin(
-    db: Session = Depends(get_db), 
+    db: Session = Depends(get_db),
     current_admin: dict = Depends(oauth2.get_current_admin)
 ):
-    admin = db.query(models.Admin).filter(models.Admin.id == current_admin.id).first() 
+    admin = db.query(models.Admin).filter(
+        models.Admin.id == current_admin.id).first()
     return admin

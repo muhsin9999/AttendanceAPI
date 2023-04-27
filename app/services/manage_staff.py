@@ -2,10 +2,10 @@ from fastapi import status, HTTPException, Response
 from sqlalchemy import func
 
 from app import models
-from app.face_rec import encodings, processimage
+from app.face_recognition_utils import face_encoding_capture, face_encoding_utils
 
 
-def create(staff, db ,current_admin):
+def create(staff, db, current_admin):
     try:
         new_staff = models.Staff(**staff.dict(), admin_id=current_admin.id)
         db.add(new_staff)
@@ -20,69 +20,74 @@ def create(staff, db ,current_admin):
         )
     return new_staff
 
+
 def show_all(db, current_admin):
     all_staff = db.query(
         models.Staff,
         func.count(models.FaceEncoding.staff_id).label("image_present")
-        ).join(
-            models.FaceEncoding, 
-            models.FaceEncoding.staff_id == models.Staff.id, 
-            isouter=True
-            ).group_by(
-                models.Staff.id 
-            ).filter(
-                models.Staff.admin_id == current_admin.id
+    ).join(
+        models.FaceEncoding,
+        models.FaceEncoding.staff_id == models.Staff.id,
+        isouter=True
+    ).group_by(
+        models.Staff.id
+    ).filter(
+        models.Staff.admin_id == current_admin.id
     ).all()
 
+    # Create valid JSON fomat
     staffs = [{
-            "id": staff.id,
-            "name": staff.name,
-            "email": staff.email,
-            "gender": staff.gender,
-            "phone_number": staff.phone_number,
-            "created_at": staff.created_at,
-            "admin_id": staff.admin_id,
-            "image_present": image_count
+        "id": staff.id,
+        "name": staff.name,
+        "email": staff.email,
+        "gender": staff.gender,
+        "phone_number": staff.phone_number,
+        "created_at": staff.created_at,
+        "admin_id": staff.admin_id,
+        "image_present": image_count
     } for staff, image_count in all_staff]
     return staffs
+
 
 def show(id, db, current_admin):
     staff = db.query(
         models.Staff).filter(
-            models.Staff.id == id, 
+            models.Staff.id == id,
             models.Staff.admin_id == current_admin.id
-        ).first()
+    ).first()
 
-    if not staff: 
+    if not staff:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Staff with id: {id} not found"
         )
     return staff
 
+
 def remove(id, db, current_admin):
     staff = db.query(
         models.Staff).filter(
-            models.Staff.id == id, 
+            models.Staff.id == id,
             models.Staff.admin_id == current_admin.id
-        )
+    )
 
     if staff.first() == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Staff with id: {id} does not exist"
         )
-    
+
     staff.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+
 def update_st(id, updated_staff, db, current_admin):
     staff_query = db.query(
         models.Staff).filter(
-            models.Staff.id == id, 
+            models.Staff.id == id,
             models.Staff.admin_id == current_admin.id
-        )
+    )
 
     staff = staff_query.first()
 
@@ -96,14 +101,15 @@ def update_st(id, updated_staff, db, current_admin):
     db.commit()
     return staff_query.first()
 
+
 async def upload(id, files, db, current_admin):
-    staff = db.query( 
+    staff = db.query(
         models.Staff).filter(
-            models.Staff.id == id,  
+            models.Staff.id == id,
             models.Staff.admin_id == current_admin.id
     ).first()
 
-    if not staff: 
+    if not staff:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Staff with id: {id} not found"
@@ -114,18 +120,18 @@ async def upload(id, files, db, current_admin):
             detail=f"No item uploaded"
         )
 
-    face_encodings = await processimage.process_image_files(files)
-    staff_encoding = models.FaceEncoding(  
+    face_encodings = await face_encoding_utils.process_image_files(files)
+    staff_encoding = models.FaceEncoding(
         staff_id=id,
         face_encoding=face_encodings
     )
-    
+
     if face_encodings is None:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"invalid image"
         )
-    
+
     try:
         db.add(staff_encoding)
         db.commit()
@@ -138,24 +144,26 @@ async def upload(id, files, db, current_admin):
             detail=f"Staff with id: {id} already has an image"
         )
 
+
 async def capture(id, db, current_admin):
-    staff = db.query( 
+    staff = db.query(
         models.Staff).filter(
-            models.Staff.id == id,  
+            models.Staff.id == id,
             models.Staff.admin_id == current_admin.id
     ).first()
 
-    if not staff: 
+    if not staff:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Staff with id: {id} not found"
         )
-       
-    face_encodings = encodings.capture_multiple_face_encodings()
-    if face_encodings is None:
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail=f"Could not get captures")
 
-    staff_encoding = models.FaceEncoding(  
+    face_encodings = face_encoding_capture.capture_multiple_face_encodings()
+    if face_encodings is None:
+        raise HTTPException(
+            status_code=status.HTTP_204_NO_CONTENT, detail=f"Could not get captures")
+
+    staff_encoding = models.FaceEncoding(
         staff_id=id,
         face_encoding=face_encodings
     )
@@ -165,21 +173,22 @@ async def capture(id, db, current_admin):
         db.commit()
         db.refresh(staff_encoding)
 
-        db.close() 
+        db.close()
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Staff with id: {id} already has an image"
         )
 
+
 async def update_st_image(id, files, db, current_admin):
-    staff = db.query( 
+    staff = db.query(
         models.Staff).filter(
-            models.Staff.id == id,  
+            models.Staff.id == id,
             models.Staff.admin_id == current_admin.id
     ).first()
 
-    if not staff: 
+    if not staff:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Staff with id: {id} not found"
@@ -188,11 +197,11 @@ async def update_st_image(id, files, db, current_admin):
     staff_encoding = db.query(
         models.FaceEncoding).join(
             models.Staff, models.Staff.id == models.FaceEncoding.staff_id).filter(
-                models.FaceEncoding.staff_id == id, 
+                models.FaceEncoding.staff_id == id,
                 models.Staff.admin_id == current_admin.id
     ).first()
 
-    if not staff_encoding: 
+    if not staff_encoding:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No item to update"
@@ -204,21 +213,19 @@ async def update_st_image(id, files, db, current_admin):
             detail=f"No item uploaded"
         )
 
-    face_encodings = await processimage.process_image_files(files)
+    face_encodings = await face_encoding_utils.process_image_files(files)
 
-    row = db.query(models.FaceEncoding).filter(models.FaceEncoding.staff_id == id).first()
-    
+    row = db.query(models.FaceEncoding).filter(
+        models.FaceEncoding.staff_id == id).first()
+
     try:
-        row.face_encoding=face_encodings
+        row.face_encoding = face_encodings
         db.commit()
     except Exception:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update profile image"
         )
     finally:
         db.close()
-
-    
-    

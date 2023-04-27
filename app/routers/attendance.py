@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from datetime import date
 
 from app import models, oauth2
-from app.database import get_db 
-from app.routers.repository import attendance
+from app.database import get_db
+from app.services import attendance_taker
 
 
 router = APIRouter(
@@ -19,16 +19,18 @@ async def take_attendance(
     db: Session = Depends(get_db),
     current_admin: dict = Depends(oauth2.get_current_admin)
 ):
-    today_attendance = attendance.AttendanceTaker(db, event, current_admin, event_date)
+    today_attendance = attendance_taker.AttendanceTaker(
+        db, event, current_admin, event_date)
     response = today_attendance.get_attendance()
     return response
+
 
 @router.get("/{event}/all")
 async def fetch_all_attendance(
     event: str,
     db: Session = Depends(get_db),
     current_admin: dict = Depends(oauth2.get_current_admin)
-):  
+):
     existing_record_query = db.query(models.Attendance).filter(
         models.Attendance.admin_id == current_admin.id,
         models.Attendance.event == event.capitalize()
@@ -39,13 +41,14 @@ async def fetch_all_attendance(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No Record found"
         )
-    existing_records = existing_record_query 
+    existing_records = existing_record_query
     event_dates = [record.event_date for record in existing_records]
     unique_dates = list(set(event_dates))
-    
-    record = attendance.AttendanceTaker(db, event, current_admin)
+
+    record = attendance_taker.AttendanceTaker(db, event, current_admin)
     response = record.response(unique_dates)
     return response
+
 
 @router.get("/{event}/{event_date}")
 async def fetch_attendance(
@@ -64,9 +67,11 @@ async def fetch_attendance(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No Record found"
         )
-    record = attendance.AttendanceTaker(db, event, current_admin, event_date)
+    record = attendance_taker.AttendanceTaker(
+        db, event, current_admin, event_date)
     response = record.response()
     return response
+
 
 @router.delete("/{event}/{event_date}")
 async def delete_attendance(
@@ -75,11 +80,7 @@ async def delete_attendance(
     db: Session = Depends(get_db),
     current_admin: dict = Depends(oauth2.get_current_admin)
 ):
-    record = attendance.AttendanceTaker(db, event, current_admin, event_date)
+    record = attendance_taker.AttendanceTaker(
+        db, event, current_admin, event_date)
     response = record.delete_attendance()
     return response
-  
-
-
-
-

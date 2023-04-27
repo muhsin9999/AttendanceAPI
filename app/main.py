@@ -16,13 +16,3 @@ app.include_router(admin.router)
 app.include_router(staff.router)
 app.include_router(authentication.router)
 app.include_router(attendance.router)
-
-
-
-
-
-    
-    
-
-
-

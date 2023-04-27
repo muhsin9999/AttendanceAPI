@@ -5,7 +5,7 @@ Lib/
 Include/
 .env
 app/routers/__pycache__/
-app/face_rec/__pycache__/
-app/routers/repository/__pycache__/
-app/routers/attendance123.py
+app/face_recognition_utils/__pycache__/
+app/services/__pycache__/
+
 

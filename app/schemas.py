@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from enum import Enum
 
+
 class StaffBase(BaseModel):
     name: str
     email: EmailStr
@@ -13,7 +14,7 @@ class CreateStaff(StaffBase):
     pass
 
 
-class CreateStaffOut(StaffBase):   
+class CreateStaffOut(StaffBase):
     id: int
     created_at: datetime
 
@@ -67,4 +68,4 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    id : str | None = None 
+    id: str | None = None
